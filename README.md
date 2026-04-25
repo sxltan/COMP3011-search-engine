@@ -1,4 +1,4 @@
-# COMP3011 Coursework 2 - Search Engine Tool
+# COMP3011 Coursework 2 - Search Engine Tool (not complete yet)
 
 This project implements a simple search engine that:
 - Crawls a website
