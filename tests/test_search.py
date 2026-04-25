@@ -1,7 +1,22 @@
 import pytest
 
 from src.search import load_index, save_index
+from src.main import print_word, find_pages
 
+
+def sample_index():
+    return {
+        "good": {
+            "page1": {"frequency": 2, "positions": [0, 3]},
+            "page2": {"frequency": 1, "positions": [1]},
+        },
+        "friends": {
+            "page1": {"frequency": 1, "positions": [2]},
+        },
+    }
+
+
+# Save / Load Tests
 
 def test_save_and_load_index(tmp_path):
     index = {
@@ -35,3 +50,79 @@ def test_save_index_creates_parent_directory(tmp_path):
     save_index(index, file_path)
 
     assert file_path.exists()
+
+
+# CLI / Search Tests
+
+def test_print_word_outputs_data(capsys):
+    index = sample_index()
+
+    print_word(index, "good")
+
+    captured = capsys.readouterr()
+
+    assert "page1" in captured.out
+    assert "frequency" in captured.out
+
+
+def test_print_word_handles_missing_word(capsys):
+    index = sample_index()
+
+    print_word(index, "unknown")
+
+    captured = capsys.readouterr()
+
+    assert "No results found" in captured.out
+
+
+def test_find_pages_single_word(capsys):
+    index = sample_index()
+
+    find_pages(index, "good")
+
+    captured = capsys.readouterr()
+
+    assert "page1" in captured.out
+    assert "page2" in captured.out
+
+
+def test_find_pages_multi_word_intersection(capsys):
+    index = sample_index()
+
+    find_pages(index, "good friends")
+
+    captured = capsys.readouterr()
+
+    assert "page1" in captured.out
+    assert "page2" not in captured.out
+
+
+def test_find_pages_missing_term(capsys):
+    index = sample_index()
+
+    find_pages(index, "good unknown")
+
+    captured = capsys.readouterr()
+
+    assert "Missing term" in captured.out
+
+
+def test_find_pages_empty_query(capsys):
+    index = sample_index()
+
+    find_pages(index, "")
+
+    captured = capsys.readouterr()
+
+    assert "Please provide at least one search term" in captured.out
+
+
+def test_find_pages_ranks_by_frequency_score(capsys):
+    index = sample_index()
+
+    find_pages(index, "good")
+
+    captured = capsys.readouterr()
+    output = captured.out
+
+    assert output.index("page1") < output.index("page2")
