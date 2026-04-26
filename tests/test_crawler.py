@@ -1,4 +1,6 @@
-from src.crawler import crawl_site, extract_page_text, get_next_page_url
+import requests
+
+from src.crawler import crawl_site, extract_page_text, fetch_page, get_next_page_url
 
 
 def test_extract_page_text_removes_script_and_style():
@@ -35,6 +37,38 @@ def test_get_next_page_url_returns_none_when_missing():
     next_url = get_next_page_url(html, "https://quotes.toscrape.com/page/10/")
 
     assert next_url is None
+
+
+def test_fetch_page_returns_html_on_success(monkeypatch):
+    class MockResponse:
+        text = "<html>Success</html>"
+
+        def raise_for_status(self):
+            return None
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr("requests.get", mock_get)
+
+    result = fetch_page("https://example.com")
+
+    assert result == "<html>Success</html>"
+
+
+def test_fetch_page_handles_http_error(monkeypatch):
+    class MockResponse:
+        def raise_for_status(self):
+            raise requests.HTTPError("404 error")
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr("requests.get", mock_get)
+
+    result = fetch_page("https://example.com")
+
+    assert result is None
 
 
 def test_crawl_site_follows_pagination(monkeypatch):

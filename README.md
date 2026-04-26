@@ -53,7 +53,7 @@ Print the inverted index for a word:
 > print life
 ```
 
-Search for pages containing one or more words:
+Search for pages containing one or more words. For multi-word searches, all terms must appear:
 
 ```text
 > find life

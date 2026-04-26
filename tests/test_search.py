@@ -1,7 +1,7 @@
 import pytest
 
+from src.main import find_pages, print_help, print_word, run_shell
 from src.search import load_index, save_index
-from src.main import print_word, find_pages
 
 
 def sample_index():
@@ -15,8 +15,6 @@ def sample_index():
         },
     }
 
-
-# Save / Load Tests
 
 def test_save_and_load_index(tmp_path):
     index = {
@@ -52,7 +50,15 @@ def test_save_index_creates_parent_directory(tmp_path):
     assert file_path.exists()
 
 
-# CLI / Search Tests
+def test_print_help_outputs_commands(capsys):
+    print_help()
+
+    captured = capsys.readouterr()
+
+    assert "build" in captured.out
+    assert "load" in captured.out
+    assert "find" in captured.out
+
 
 def test_print_word_outputs_data(capsys):
     index = sample_index()
@@ -117,7 +123,7 @@ def test_find_pages_empty_query(capsys):
     assert "Please provide at least one search term" in captured.out
 
 
-def test_find_pages_ranks_by_frequency_score(capsys):
+def test_find_pages_ranks_results(capsys):
     index = sample_index()
 
     find_pages(index, "good")
@@ -126,3 +132,35 @@ def test_find_pages_ranks_by_frequency_score(capsys):
     output = captured.out
 
     assert output.index("page1") < output.index("page2")
+
+
+def test_run_shell_exits_cleanly(monkeypatch, capsys):
+    monkeypatch.setattr("builtins.input", lambda _: "exit")
+
+    run_shell()
+
+    captured = capsys.readouterr()
+
+    assert "Goodbye" in captured.out
+
+
+def test_run_shell_handles_unknown_command(monkeypatch, capsys):
+    commands = iter(["unknown", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(commands))
+
+    run_shell()
+
+    captured = capsys.readouterr()
+
+    assert "Unknown command" in captured.out
+
+
+def test_run_shell_print_requires_loaded_index(monkeypatch, capsys):
+    commands = iter(["print life", "exit"])
+    monkeypatch.setattr("builtins.input", lambda _: next(commands))
+
+    run_shell()
+
+    captured = capsys.readouterr()
+
+    assert "No index loaded" in captured.out
