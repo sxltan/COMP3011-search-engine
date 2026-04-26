@@ -1,6 +1,6 @@
 from src.crawler import crawl_site
 from src.indexer import build_index, tokenize
-from src.search import load_index, save_index
+from src.search import compute_tfidf_score, load_index, save_index
 
 
 def print_help() -> None:
@@ -35,8 +35,13 @@ def print_word(index: dict, word: str) -> None:
         print(f"  positions: {stats['positions']}")
 
 
+def get_total_documents(index: dict) -> int:
+    """Count the number of unique pages stored in the index."""
+    return len({url for word_data in index.values() for url in word_data})
+
+
 def find_pages(index: dict, query: str) -> None:
-    """Find pages that contain all query words."""
+    """Find pages that contain all query words and rank them with TF-IDF."""
     terms = tokenize(query)
 
     if not terms:
@@ -58,16 +63,18 @@ def find_pages(index: dict, query: str) -> None:
         print("No pages contain all query terms.")
         return
 
+    total_docs = get_total_documents(index)
+
     scored_results = [
-        (url, sum(index[term][url]["frequency"] for term in terms))
+        (url, compute_tfidf_score(index, terms, url, total_docs))
         for url in matching_urls
     ]
 
-    scored_results.sort(key=lambda x: x[1], reverse=True)
+    scored_results.sort(key=lambda result: result[1], reverse=True)
 
     print(f"Results for '{query}':")
     for url, score in scored_results:
-        print(f"- {url} (score: {score})")
+        print(f"- {url} (score: {score:.3f})")
 
 
 def run_shell() -> None:

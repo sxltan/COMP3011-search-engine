@@ -1,4 +1,5 @@
 import json
+import math
 from pathlib import Path
 
 
@@ -22,3 +23,18 @@ def load_index(file_path: Path = DEFAULT_INDEX_PATH) -> dict:
 
     with file_path.open("r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def compute_tfidf_score(index: dict, terms: list[str], url: str, total_docs: int) -> float:
+    """Compute a smoothed TF-IDF score for a document."""
+    score = 0.0
+
+    for term in terms:
+        tf = index[term][url]["frequency"]
+        df = len(index[term])
+
+        idf = math.log((1 + total_docs) / (1 + df)) + 1
+
+        score += tf * idf
+
+    return score
