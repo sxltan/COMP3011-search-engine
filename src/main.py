@@ -45,6 +45,51 @@ def get_total_documents(index: dict) -> int:
     return len({url for word_data in index.values() for url in word_data})
 
 
+def edit_distance(a: str, b: str) -> int:
+    """
+    Compute the Levenshtein edit distance between two strings.
+
+    Counts the minimum number of single-character insertions, deletions,
+    or substitutions needed to transform a into b.
+
+    Complexity: O(m * n) where m = len(a) and n = len(b).
+    """
+    rows = len(a) + 1
+    cols = len(b) + 1
+    dist = [[0] * cols for _ in range(rows)]
+
+    for i in range(rows):
+        dist[i][0] = i
+    for j in range(cols):
+        dist[0][j] = j
+
+    for i in range(1, rows):
+        for j in range(1, cols):
+            cost = 0 if a[i - 1] == b[j - 1] else 1
+            dist[i][j] = min(
+                dist[i - 1][j] + 1,
+                dist[i][j - 1] + 1,
+                dist[i - 1][j - 1] + cost,
+            )
+
+    return dist[-1][-1]
+
+
+def suggest_similar_words(word: str, index: dict, max_distance: int = 2) -> list[str]:
+    """
+    Suggest up to 3 index words within edit distance of the query word.
+
+    Searches the entire index vocabulary for words that are close to the
+    given word, then returns the closest matches sorted by distance.
+
+    Complexity: O(V * m * n) where V is the vocabulary size and m, n are
+    the lengths of the words being compared.
+    """
+    scored = [(w, edit_distance(word, w)) for w in index]
+    matches = [(w, d) for w, d in scored if d <= max_distance]
+    return [w for w, _ in sorted(matches, key=lambda x: x[1])][:3]
+
+
 def has_consecutive_positions(index: dict, terms: list[str], url: str) -> bool:
     """
     Check whether the given terms appear consecutively in a document.
@@ -96,6 +141,10 @@ def find_pages(index: dict, query: str) -> None:
 
     if missing_terms:
         print(f"No results found. Missing term(s): {', '.join(missing_terms)}")
+        for term in missing_terms:
+            suggestions = suggest_similar_words(term, index)
+            if suggestions:
+                print(f"  Did you mean: {', '.join(suggestions)}?")
         return
 
     matching_urls = set(index[terms[0]].keys())

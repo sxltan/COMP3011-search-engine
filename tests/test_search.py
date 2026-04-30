@@ -1,6 +1,6 @@
 import pytest
 
-from src.main import find_pages, print_help, print_word, run_shell
+from src.main import find_pages, print_help, print_word, run_shell, suggest_similar_words
 from src.search import load_index, save_index
 
 
@@ -369,3 +369,23 @@ def test_find_pages_phrase_single_word_in_quotes(capsys):
 
     assert "page1" in captured.out
     assert "page2" in captured.out
+
+
+def test_suggest_similar_words_finds_close_match():
+    index = {"friends": {}, "life": {}, "good": {}}
+
+    suggestions = suggest_similar_words("freinds", index)
+
+    assert "friends" in suggestions
+
+
+def test_find_pages_shows_suggestion_for_typo(capsys):
+    index = {"friends": {"page1": {"frequency": 1, "positions": [0]}}}
+
+    find_pages(index, "freinds")
+
+    captured = capsys.readouterr()
+
+    assert "Missing term" in captured.out
+    assert "Did you mean" in captured.out
+    assert "friends" in captured.out
