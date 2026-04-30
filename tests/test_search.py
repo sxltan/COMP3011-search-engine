@@ -321,3 +321,51 @@ def test_full_index_save_load_and_search_pipeline(tmp_path, capsys):
 
     assert "page1" in captured.out
     assert "page2" not in captured.out
+
+
+def phrase_index():
+    return {
+        "life": {
+            "page1": {"frequency": 1, "positions": [0]},
+            "page2": {"frequency": 1, "positions": [0]},
+        },
+        "is": {
+            "page1": {"frequency": 1, "positions": [1]},
+            "page2": {"frequency": 1, "positions": [5]},
+        },
+        "good": {
+            "page1": {"frequency": 1, "positions": [2]},
+            "page2": {"frequency": 1, "positions": [3]},
+        },
+    }
+
+
+def test_find_pages_phrase_returns_consecutive_match(capsys):
+    find_pages(phrase_index(), '"life is good"')
+
+    captured = capsys.readouterr()
+
+    assert "page1" in captured.out
+    assert "page2" not in captured.out
+
+
+def test_find_pages_phrase_no_results_when_not_consecutive(capsys):
+    index = {
+        "good": {"page1": {"frequency": 1, "positions": [0]}},
+        "friends": {"page1": {"frequency": 1, "positions": [5]}},
+    }
+
+    find_pages(index, '"good friends"')
+
+    captured = capsys.readouterr()
+
+    assert "No pages contain all query terms" in captured.out
+
+
+def test_find_pages_phrase_single_word_in_quotes(capsys):
+    find_pages(phrase_index(), '"life"')
+
+    captured = capsys.readouterr()
+
+    assert "page1" in captured.out
+    assert "page2" in captured.out
