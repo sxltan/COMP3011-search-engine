@@ -10,6 +10,7 @@ def print_help() -> None:
     print("  load               Load index from file")
     print("  print <word>       Print index entry for a word")
     print("  find <query>       Find pages containing all query words")
+    print('  find "<phrase>"    Search for an exact phrase')
     print("  help               Show this help message")
     print("  exit               Quit the program")
 
