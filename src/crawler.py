@@ -21,7 +21,11 @@ def fetch_page(url: str) -> str | None:
 
 
 def extract_page_text(html: str) -> str:
-    """Extract readable text from a page."""
+    """
+    Extract readable text from a page by stripping scripts and styles.
+
+    Complexity: O(n) where n is the number of nodes in the HTML tree.
+    """
     soup = BeautifulSoup(html, "html.parser")
 
     for tag in soup(["script", "style"]):
@@ -45,11 +49,16 @@ def crawl_site(start_url: str = BASE_URL, delay: int = DEFAULT_DELAY) -> list[di
     """
     Crawl the quotes website and return a list of pages.
 
+    Follows pagination until no next page is found. Applies a politeness
+    delay between requests to avoid overloading the server.
+
     Each page is stored as:
     {
         "url": page URL,
         "text": extracted page text
     }
+
+    Complexity: O(P) where P is the number of pages crawled.
     """
     pages = []
     current_url = start_url

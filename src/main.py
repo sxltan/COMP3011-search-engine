@@ -36,12 +36,25 @@ def print_word(index: dict, word: str) -> None:
 
 
 def get_total_documents(index: dict) -> int:
-    """Count the number of unique pages stored in the index."""
+    """
+    Count the number of unique pages stored in the index.
+
+    Complexity: O(V * U) where V is the vocabulary size and U is the
+    average number of URLs per word.
+    """
     return len({url for word_data in index.values() for url in word_data})
 
 
 def find_pages(index: dict, query: str) -> None:
-    """Find pages that contain all query words and rank them with TF-IDF."""
+    """
+    Find pages that contain all query words and rank them with TF-IDF.
+
+    Uses set intersection to find pages containing every term, then
+    ranks results by TF-IDF score in descending order.
+
+    Complexity: O(T * U) where T is the number of query terms and U is
+    the average number of URLs per term.
+    """
     terms = tokenize(query)
 
     if not terms:

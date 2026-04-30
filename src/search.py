@@ -26,7 +26,16 @@ def load_index(file_path: Path = DEFAULT_INDEX_PATH) -> dict:
 
 
 def compute_tfidf_score(index: dict, terms: list[str], url: str, total_docs: int) -> float:
-    """Compute a smoothed TF-IDF score for a document."""
+    """
+    Compute a smoothed TF-IDF score for a document given a set of query terms.
+
+    Uses the formula: score = sum(tf * idf) for each term, where
+    idf = log((1 + N) / (1 + df)) + 1. The smoothing (+1 to numerator
+    and denominator) prevents division by zero and reduces the impact
+    of very rare terms, following standard IR practice.
+
+    Complexity: O(T) where T is the number of query terms.
+    """
     score = 0.0
 
     for term in terms:
