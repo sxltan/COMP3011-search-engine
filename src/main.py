@@ -57,8 +57,10 @@ def edit_distance(a: str, b: str) -> int:
     """
     rows = len(a) + 1
     cols = len(b) + 1
+    # Levenshtein table: entry [i][j] is cost to match a[:i] with b[:j]
     dist = [[0] * cols for _ in range(rows)]
 
+    # First row/column: empty string vs prefix is all inserts or deletes
     for i in range(rows):
         dist[i][0] = i
     for j in range(cols):
@@ -67,6 +69,7 @@ def edit_distance(a: str, b: str) -> int:
     for i in range(1, rows):
         for j in range(1, cols):
             cost = 0 if a[i - 1] == b[j - 1] else 1
+            # min(delete from a, insert into a, or match/replace last chars)
             dist[i][j] = min(
                 dist[i - 1][j] + 1,
                 dist[i][j - 1] + 1,
@@ -110,6 +113,7 @@ def has_consecutive_positions(index: dict, terms: list[str], url: str) -> bool:
         for term in terms
     ]
 
+    # Try each spot where the first word appears; next words must sit at +1, +2, ...
     for start in position_sets[0]:
         if all(start + offset in position_sets[offset] for offset in range(1, len(terms))):
             return True
@@ -128,6 +132,7 @@ def find_pages(index: dict, query: str) -> None:
     Complexity: O(T * U) where T is the number of query terms and U is
     the average number of URLs per term.
     """
+    # Double quotes mean adjacent-token phrase search (see has_consecutive_positions).
     phrase_mode = query.startswith('"') and query.endswith('"') and len(query) > 2
     if phrase_mode:
         query = query[1:-1].strip()
@@ -148,6 +153,7 @@ def find_pages(index: dict, query: str) -> None:
                 print(f"  Did you mean: {', '.join(suggestions)}?")
         return
 
+    # Standard AND query: URL must list every term (order ignored until phrase filter).
     matching_urls = set(index[terms[0]].keys())
 
     for term in terms[1:]:

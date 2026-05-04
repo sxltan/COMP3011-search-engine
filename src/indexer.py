@@ -45,6 +45,7 @@ def build_index(pages: list[dict[str, str]]) -> dict[str, dict[str, dict[str, li
         url = page["url"]
         words = tokenize(page["text"])
 
+        # position counts tokens left-to-right so phrases can check adjacency
         for position, word in enumerate(words):
             index[word][url]["frequency"] += 1
             index[word][url]["positions"].append(position)

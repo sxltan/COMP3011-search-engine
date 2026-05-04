@@ -38,6 +38,7 @@ def compute_tfidf_score(index: dict, terms: list[str], url: str, total_docs: int
     """
     score = 0.0
 
+    # Rare words across the corpus get a bigger idf bump than common ones.
     for term in terms:
         tf = index[term][url]["frequency"]
         df = len(index[term])

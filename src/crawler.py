@@ -65,6 +65,7 @@ def crawl_site(start_url: str = BASE_URL, delay: int = DEFAULT_DELAY) -> list[di
     first_request = True
 
     while current_url:
+        # Politeness delay between pages (first fetch has no prior request).
         if not first_request:
             time.sleep(delay)
 

@@ -2,22 +2,22 @@
 
 ## Project Overview and Purpose
 
-This project is a Python command-line search engine that crawls https://quotes.toscrape.com/, builds an inverted index, and allows users to search for words and phrases across all crawled pages.
+This project is a Python command-line search engine that crawls https://quotes.toscrape.com/, builds an inverted index, and lets you search for words and phrases across every crawled page.
 
-The crawler follows pagination until no next page exists, applying a 6-second politeness delay between requests. For each page, it strips scripts and styles before extracting text, then passes the content to the indexer.
+The crawler follows pagination until there is no "next" link, waits **6 seconds** between requests (except before the first fetch), strips `<script>` and `<style>` content, then passes plain text to the indexer.
 
-The inverted index maps each word to the pages it appears on, storing the frequency and the position of every occurrence. Positions are stored because they allow phrase search - when the query is wrapped in quotes, the engine checks that the terms appear consecutively in the document rather than just anywhere on the page. This uses the position data directly without needing any changes to the index structure.
+The inverted index maps each word to the URLs where it appears, storing **frequency** and **token positions** (each word's index in the token sequence after tokenisation). **Phrase search** is triggered by double quotes: terms must appear at **consecutive** positions in that sequence (each step +1), not only somewhere on the same page.
 
-Search results are ranked using TF-IDF. The scoring formula is:
+Queries are ranked with **smoothed TF-IDF**. Per query term in a document:
 
 ```
-score = sum(tf * idf) for each query term
+score = sum(tf * idf) over query terms
 idf   = log((1 + N) / (1 + df)) + 1
 ```
 
-where `tf` is the term frequency in the document, `df` is the number of documents containing the term, and `N` is the total number of documents. The `+1` smoothing prevents division by zero and reduces the weight of very rare terms, which produces more balanced rankings than standard IDF on a small corpus like this one.
+Here **`tf`** is raw term frequency in that document, **`df`** is how many indexed documents contain the term, and **`N`** is the total number of distinct indexed documents (unique URLs in the index). Adding **`1`** above and below avoids degenerate behaviour when **`df`** is very small and **pulls extreme IDF values toward the middle**, which stabilises ranking on a small corpus compared with unsmoothed **`log(N / df)`** IDF.
 
-When a search term is not found in the index, the engine computes the Levenshtein edit distance between the query word and every word in the index vocabulary, then suggests the closest matches. This gives users a useful path forward instead of a dead end.
+If a typed word is missing from the index, the tool compares it to the vocabulary with **Levenshtein edit distance**, keeps matches within distance **2**, and prints up to **three** "Did you mean?" suggestions (closest first).
 
 ---
 
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 ## Usage Examples
 
-Run the program:
+Run the program from the repository root:
 
 ```bash
 python3 -m src.main
@@ -48,39 +48,39 @@ python3 -m src.main
 
 ### Commands
 
-Build the index (crawls the website and saves the result to `data/index.json`):
+Build the index (crawls the site and writes `data/index.json`):
 
 ```text
 > build
 ```
 
-Load an existing index from file:
+Load a saved index:
 
 ```text
 > load
 ```
 
-Print the inverted index entry for a word, showing frequency and positions per page:
+Print one word’s postings (frequency and positions per URL):
 
 ```text
 > print life
 ```
 
-Search for pages containing all query words, ranked by TF-IDF score:
+Conjunctive search: **every** word must occur somewhere on the page; results are sorted by TF-IDF score.
 
 ```text
 > find life
 > find good friends
 ```
 
-Search for an exact phrase (terms must appear consecutively):
+Phrase search (tokens must be consecutive in the indexed sequence):
 
 ```text
 > find "the world"
 > find "life is"
 ```
 
-If a term is not found, the engine suggests similar words:
+Unknown token with nearby vocabulary matches:
 
 ```text
 > find freinds
@@ -98,32 +98,39 @@ Run all tests:
 pytest
 ```
 
-Run tests with coverage:
+With coverage over `src/`:
 
 ```bash
 pytest --cov=src
 ```
 
-Run with verbose output to see each test name:
+Verbose listing:
 
 ```bash
 pytest -v
 ```
 
-The test suite covers crawling (pagination, HTTP errors, text extraction), indexing (tokenisation, frequency, positions), storage (save/load roundtrip, missing file), and all search functionality including phrase search, query suggestions, multi-word intersection, edge cases, and the full CLI loop.
+### Testing strategy
+
+Tests avoid calling the live website: crawler pagination and HTTP failures use **pytest `monkeypatch`** on `requests.get` or `fetch_page`. Save/load tests use **`tmp_path`** so nothing writes outside the temp directory. The interactive shell is driven by mocking **`builtins.input`** with fixed command sequences. One integration-style test builds an index, writes JSON with **`save_index`**, reloads with **`load_index`**, then runs **`find_pages`**—still without network I/O.
+
+**Optional tooling:** `benchmark.py` times `build_index` and `find_pages` on synthetic pages (run `python3 benchmark.py`). **GitHub Actions** (`.github/workflows/tests.yml`) runs the same pytest suite on pushes and pull requests.
 
 ---
 
 ## Dependencies
 
-The project uses the following libraries:
+Runtime:
 
-- `requests` - HTTP requests for the crawler
-- `beautifulsoup4` - HTML parsing and text extraction
-- `pytest` - test framework
-- `pytest-cov` - test coverage reporting
+- `requests` — HTTP client for the crawler  
+- `beautifulsoup4` — HTML parsing and visible-text extraction  
 
-Install all dependencies with:
+Development:
+
+- `pytest` — test runner  
+- `pytest-cov` — coverage reporting  
+
+Install everything listed in `requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
@@ -133,4 +140,4 @@ pip install -r requirements.txt
 
 ## Submission Notes
 
-The generated index file is saved to `data/index.json` and is included in the submission. It can be rebuilt at any time by running the `build` command.
+The committed artefact is **`data/index.json`**. Regenerate it anytime with **`build`** after activating the virtual environment and installing dependencies.
